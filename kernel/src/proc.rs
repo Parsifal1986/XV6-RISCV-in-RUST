@@ -1,4 +1,3 @@
-use crate::proc;
 use crate::spinlock::Spinlock;
 use crate::riscv::{r_tp, PagetableT};
 use crate::param::{NCPU, NPROC};

@@ -441,7 +441,7 @@ pub fn r_ra() -> u64 {
 }
 
 #[inline(always)]
-pub fn s_fence() {
+pub fn sfence_vma() {
   unsafe {
     asm! {
       "sfence.vma zero, zero"

@@ -1,6 +1,6 @@
 use crate::memlayout::{KERNBASE, PHYSTOP, PLIC, TRAMPOLINE, UART0, VIRTIO0};
 use crate::proc::proc_mapstacks;
-use crate::riscv::{PagetableT, PteT, MAXVA, PA2PTE, PGSIZE, PTE_R, PTE_V, PTE_W, PTE_X, PX};
+use crate::riscv::{sfence_vma, w_satp, PagetableT, PteT, MAKE_SATP, MAXVA, PA2PTE, PGSIZE, PTE_R, PTE_V, PTE_W, PTE_X, PX};
 use crate::kalloc::kalloc;
 use crate::defs::panic;
 use core::ptr::write_bytes;
@@ -111,3 +111,12 @@ pub fn kvminit() {
     KERNEL_PAGETABLE = kvmmake()
   };
 }
+
+pub fn kvminithart() {
+  sfence_vma();
+
+  w_satp(MAKE_SATP(unsafe { KERNEL_PAGETABLE as u64 }));
+
+  sfence_vma();
+}
+
