@@ -389,9 +389,9 @@ pub fn intr_off() {
 }
 
 #[inline(always)]
-pub fn intr_get() -> bool {
+pub fn intr_get() -> u64 {
   let x: u64 = r_sstatus() & SSTATUS_SIE;
-  x != 0
+  if x != 0 { 1 } else { 0 }
 }
 
 #[inline(always)]
@@ -448,6 +448,9 @@ pub fn s_fence() {
     };
   }
 }
+
+pub type PagetableT = *mut u64;
+pub type PteT = u64;
 
 pub const PGSIZE: u64 = 4096;
 pub const PGSHIFT: u64 = 12;

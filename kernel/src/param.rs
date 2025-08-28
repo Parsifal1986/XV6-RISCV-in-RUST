@@ -1,0 +1,13 @@
+pub const NPROC:        u64 = 64;
+pub const NCPU:         u64 = 8;
+pub const NOFILE:       u64 = 16;
+pub const NFILE:        u64 = 100;
+pub const NINODE:       u64 = 50;
+pub const NDEV:         u64 = 10;
+pub const ROOTDEV:      u64 = 1;
+pub const MAXARG:       u64 = 32;
+pub const MAXOPBLOCKS:  u64 = 10;
+pub const LOGBLOCKS:    u64 = MAXOPBLOCKS * 3;
+pub const NBUF:         u64 = MAXOPBLOCKS * 3;
+pub const FSSIZE:       u64 = 2000;
+pub const USERSTACK:    u64 = 1;
