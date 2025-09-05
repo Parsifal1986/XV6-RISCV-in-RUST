@@ -1,8 +1,8 @@
-use std::intrinsics::write_bytes;
-
 use crate::riscv::{PGROUNDUP, PGSIZE};
 use crate::spinlock::{acquire, initlock, release, Spinlock};
 use crate::memlayout::PHYSTOP;
+use core::ptr::null_mut;
+use std::ptr::write_bytes;
 
 extern "C" {
   static etext: u8;
@@ -22,7 +22,7 @@ impl KMem {
   pub const fn new() -> Self {
     KMem {
       lock: Spinlock::new(),
-      freelist: core::ptr::null_mut(),
+      freelist: null_mut(),
     }
   }
 }

@@ -1,3 +1,5 @@
+use crate::{kalloc::kinit, proc::cpuid, vm::{kvminit, kvminithart}};
+
 mod vm;
 mod riscv;
 mod start;
@@ -8,7 +10,24 @@ mod param;
 mod memlayout;
 mod defs;
 mod types;
+mod console;
+mod uart;
+mod printf;
+mod exec;
+mod elf;
+mod file;
+mod fs;
+mod sleeplock;
+mod pipe;
+mod log;
+mod buf;
+mod stat;
 
 fn main() {
-    println!("Hello, world!");
+  if cpuid() == 0 {
+    
+    kinit();
+    kvminit();
+    kvminithart();
+  }
 }

@@ -31,7 +31,7 @@ pub fn initlock(lk: &mut Spinlock, name: Option<&'static str>) {
 pub fn acquire(lk: &mut Spinlock) {
   push_off();
   if holding(lk) {
-    panic("acquire");
+    panic("acquire".as_bytes());
   }
 
   while lk.locked.swap(true, Ordering::Acquire) {
@@ -45,7 +45,7 @@ pub fn acquire(lk: &mut Spinlock) {
 
 pub fn release(lk: &mut Spinlock) {
   if !holding(lk) {
-    panic("release");
+    panic("release".as_bytes());
   }
 
   lk.cpu = None;
@@ -60,7 +60,7 @@ fn holding(lk: &Spinlock) -> bool {
   lk.locked.load(Ordering::Acquire) && lk.cpu.map(|c| std::ptr::eq(c, mycpu())).unwrap_or(false)
 }
 
-fn push_off() {
+pub fn push_off() {
   let old: u64 = intr_get();
 
   intr_off();
@@ -71,13 +71,13 @@ fn push_off() {
   mycpu().noff += 1;
 }
 
-fn pop_off() {
+pub fn pop_off() {
   let c = mycpu();
   if intr_get() != 0 {
-    panic("pop_off - interruptible");
+    panic("pop_off - interruptible".as_bytes());
   }
   if c.noff < 1 {
-    panic("pop_off");
+    panic("pop_off".as_bytes());
   }
   c.noff -= 1;
   if c.noff == 0 && c.intena != 0 {

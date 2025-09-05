@@ -4,6 +4,7 @@ use crate::riscv::{sfence_vma, w_satp, PagetableT, PteT, MAKE_SATP, MAXVA, PA2PT
 use crate::kalloc::kalloc;
 use crate::defs::panic;
 use core::ptr::write_bytes;
+use core::ptr::null_mut;
 
 extern "C" {
   static etext: u8;
@@ -41,13 +42,13 @@ pub fn kvmmake() -> PagetableT {
 
 pub fn kvmmap(kpgtbl: PagetableT, va: u64, pa: u64, sz: u64, perm: i32) {
   if mappage(kpgtbl, va, sz, pa, perm) != 0 {
-    panic("kvmmap");
+    panic("kvmmap".as_bytes());
   }
 }
 
 pub fn walk(mut pagetable: PagetableT, va: u64, alloc: i32) -> Option<&'static mut PteT> {
   if va >= MAXVA {
-    panic("walk");
+    panic("walk".as_bytes());
   }
 
   for i in 2..0 {
@@ -75,15 +76,15 @@ pub fn mappage(pagetable: PagetableT, va: u64, size: u64, mut pa: u64, perm: i32
   let mut pte: Option<&'static mut PteT>;
 
   if va % PGSIZE != 0 {
-    panic("mappage: va not aligned");
+    panic("mappage: va not aligned".as_bytes());
   }
   
   if size % PGSIZE != 0 {
-    panic("mappage: size not aligned");
+    panic("mappage: size not aligned".as_bytes());
   }
 
   if size == 0 {
-    panic("mappage: size zero");
+    panic("mappage: size zero".as_bytes());
   }
   a = va;
   last = va + size - PGSIZE;
@@ -94,7 +95,7 @@ pub fn mappage(pagetable: PagetableT, va: u64, size: u64, mut pa: u64, perm: i32
       None => return -1,
     };
     if *pte_value & PTE_V as u64 != 0 {
-      panic("mappage: remap");
+      panic("mappage: remap".as_bytes());
     }
     *pte_value = PA2PTE(pa) | perm as u64 | PTE_V;
     if a == last {
@@ -120,3 +121,25 @@ pub fn kvminithart() {
   sfence_vma();
 }
 
+pub fn uvmcreate() -> PagetableT {
+  let pagetable = kalloc() as PagetableT;
+  if pagetable as u64 == 0 {
+    return null_mut();
+  }
+  unsafe {
+    write_bytes(pagetable as *mut u8, 0, PGSIZE as usize);
+  }
+  pagetable
+}
+
+pub fn uvmalloc(pagetable: PagetableT, oldsz: u64, newsz: u64, xperm: i32) -> u64 {
+  todo!()
+}
+
+pub fn uvmclear(pagetable: PagetableT, va: u64) {
+  todo!()
+}
+
+pub fn copyout(pagetable: PagetableT, va: u64, src: u64, len: u64) -> i32 {
+  todo!()
+}
