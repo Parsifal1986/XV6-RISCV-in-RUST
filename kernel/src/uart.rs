@@ -1,5 +1,5 @@
 use crate::memlayout::UART0;
-use crate::printf::{panicked, panicking};
+use crate::printf::{PANICKED, PANICKING};
 use crate::proc::sleep;
 use crate::spinlock::{acquire, initlock, pop_off, push_off, release, Spinlock};
 
@@ -76,11 +76,11 @@ pub fn uartwrite(buf: &mut[u8], n: i32) {
 }
 
 pub fn uartputc_sync(c: u8) {
-  if unsafe { panicking } == 0 {
+  if unsafe { PANICKING } == 0 {
     push_off();
   }
 
-  if unsafe { panicked } != 0 {
+  if unsafe { PANICKED } != 0 {
     loop {
         
     };
@@ -91,7 +91,7 @@ pub fn uartputc_sync(c: u8) {
   }
   write_reg(THR as *mut u8, c);
 
-  if unsafe { panicking } == 0 {
+  if unsafe { PANICKING } == 0 {
     pop_off();
   }
 }

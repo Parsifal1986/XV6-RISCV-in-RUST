@@ -159,11 +159,11 @@ pub fn stati(ip: *mut Inode, st: &mut Stat) {
   todo!()
 }
 
-pub fn readi(inode: *mut Inode, user_dst: i32, dst: u64, off: u32, n: u32) -> i32 {
+pub fn readi(inode: *mut Inode, user_dst: i32, dst: u64, off: u64, n: u32) -> i32 {
   todo!()
 }
 
-pub fn writei(inode: *mut Inode, src: u64, off: u32, n: u32) -> i32 {
+pub fn writei(inode: *mut Inode, src: u64, off: u64, n: u32) -> i32 {
   todo!()
 }
 

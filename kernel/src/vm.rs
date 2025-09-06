@@ -1,6 +1,6 @@
 use crate::memlayout::{KERNBASE, PHYSTOP, PLIC, TRAMPOLINE, UART0, VIRTIO0};
 use crate::proc::proc_mapstacks;
-use crate::riscv::{sfence_vma, w_satp, PagetableT, PteT, MAKE_SATP, MAXVA, PA2PTE, PGSIZE, PTE_R, PTE_V, PTE_W, PTE_X, PX};
+use crate::riscv::{sfence_vma, w_satp, PagetableT, PteT, MAKE_SATP, MAXVA, PA2PTE, PGSIZE, PTE2PA, PTE_R, PTE_U, PTE_V, PTE_W, PTE_X, PX};
 use crate::kalloc::kalloc;
 use crate::defs::panic;
 use core::ptr::write_bytes;
@@ -69,6 +69,26 @@ pub fn walk(mut pagetable: PagetableT, va: u64, alloc: i32) -> Option<&'static m
   Some(unsafe {
     &mut *pagetable.add(PX(0, va) as usize)
   })
+}
+
+pub fn walkaddr(pagetable: PagetableT, va: u64) -> u64 {
+  if va >= MAXVA {
+    return 0;
+  }
+
+  let pte = walk(pagetable, va, 0);
+  if pte.is_none() {
+    return 0;
+  }
+
+  let pte_value = *pte.unwrap();
+  if pte_value & PTE_V as u64 == 0 {
+    return 0;
+  }
+  if pte_value & PTE_U as u64 == 0 {
+    return 0;
+  }
+  PTE2PA(pte_value)
 }
 
 pub fn mappage(pagetable: PagetableT, va: u64, size: u64, mut pa: u64, perm: i32) -> i32 {

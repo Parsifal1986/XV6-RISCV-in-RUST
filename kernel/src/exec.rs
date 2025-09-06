@@ -1,3 +1,4 @@
+use crate::defs::panic;
 use crate::elf::{check_magic, Elfhdr, Proghdr, ELF_PROG_LOAD};
 use crate::fs::{ilock, iunlockput, namei, readi};
 use crate::log::{begin_op, end_op};
@@ -5,7 +6,7 @@ use crate::param::{MAXARG, USERSTACK};
 use crate::proc::{myproc, proc_freepagetable, proc_pagetable};
 use crate::riscv::{PagetableT, PGROUNDUP, PGSIZE, PTE_W, PTE_X};
 use crate::file::Inode;
-use crate::vm::{copyout, uvmalloc, uvmclear};
+use crate::vm::{copyout, uvmalloc, uvmclear, walkaddr};
 use core::mem::{size_of, zeroed};
 
 pub fn flags2perm(flags: i32) -> u64 {
@@ -76,7 +77,7 @@ pub fn kexec(path: &[u8], argv: &[*const u8]) -> i32 {
   off = elf.phoff as usize;
   for _ in 0..elf.phnum {
     off += size_of::<Proghdr>();
-    if readi(ip, 0, &mut ph as *mut Proghdr as u64, off as u32, size_of::<Proghdr>() as u32) != size_of::<Proghdr>() as i32 {
+    if readi(ip, 0, &mut ph as *mut Proghdr as u64, off as u64, size_of::<Proghdr>() as u32) != size_of::<Proghdr>() as i32 {
       bad(pagetable, sz, Some(ip));
       return -1;
     }
@@ -164,6 +165,7 @@ pub fn kexec(path: &[u8], argv: &[*const u8]) -> i32 {
   };
 
   // safestrcpy();
+  todo!("safestrcpy not implemented");
 
   oldpagetable = Some(p.pagetable);
   p.pagetable = pagetable.unwrap();
@@ -178,5 +180,23 @@ pub fn kexec(path: &[u8], argv: &[*const u8]) -> i32 {
 }
 
 fn loadseg(pagetable: PagetableT, va: u64, ip: *mut Inode, offset: u64, sz: u64) -> i32 {
-  todo!()
+  let mut n: u32;
+  let mut pa: u64;
+
+  for i in (0..sz).step_by(PGSIZE as usize) {
+    pa = walkaddr(pagetable, va + i);
+    if pa == 0 {
+      panic("loadseg: address should exist".as_bytes());
+    }
+
+    n = if sz - i < PGSIZE {
+      (sz - i) as u32
+    } else {
+      PGSIZE as u32
+    };
+    if readi(ip, 0, pa, offset + i, n) != n as i32 {
+      return -1;
+    }
+  }
+  0
 }
