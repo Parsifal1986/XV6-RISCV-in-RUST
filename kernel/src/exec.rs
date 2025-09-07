@@ -1,4 +1,4 @@
-use crate::defs::panic;
+use crate::printf::panic;
 use crate::elf::{check_magic, Elfhdr, Proghdr, ELF_PROG_LOAD};
 use crate::fs::{ilock, iunlockput, namei, readi};
 use crate::log::{begin_op, end_op};
@@ -186,7 +186,7 @@ fn loadseg(pagetable: PagetableT, va: u64, ip: *mut Inode, offset: u64, sz: u64)
   for i in (0..sz).step_by(PGSIZE as usize) {
     pa = walkaddr(pagetable, va + i);
     if pa == 0 {
-      panic("loadseg: address should exist".as_bytes());
+      panic("loadseg: address should exist");
     }
 
     n = if sz - i < PGSIZE {

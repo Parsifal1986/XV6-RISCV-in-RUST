@@ -1,14 +1,14 @@
 use core::sync::atomic::{AtomicBool, Ordering};
-use std::hint::spin_loop;
-use std::sync::atomic::fence;
+use core::hint::spin_loop;
+use core::sync::atomic::fence;
 
 use crate::riscv::{intr_get, intr_off, intr_on};
 use crate::proc::{mycpu, Cpu};
-use crate::defs::panic;
+use crate::printf::panic;
 
 pub struct Spinlock {
   locked: AtomicBool,
-  name: Option<&'static str>,
+  name: Option<&'static [u8]>,
   cpu: Option<&'static Cpu>,
 }
 
@@ -22,7 +22,7 @@ impl Spinlock {
   }
 }
 
-pub fn initlock(lk: &mut Spinlock, name: Option<&'static str>) {
+pub fn initlock(lk: &mut Spinlock, name: Option<&'static [u8]>) {
   lk.name = name;
   lk.locked = AtomicBool::new(false);
   lk.cpu = None;
@@ -31,7 +31,7 @@ pub fn initlock(lk: &mut Spinlock, name: Option<&'static str>) {
 pub fn acquire(lk: &mut Spinlock) {
   push_off();
   if holding(lk) {
-    panic("acquire".as_bytes());
+    panic("acquire");
   }
 
   while lk.locked.swap(true, Ordering::Acquire) {
@@ -45,7 +45,7 @@ pub fn acquire(lk: &mut Spinlock) {
 
 pub fn release(lk: &mut Spinlock) {
   if !holding(lk) {
-    panic("release".as_bytes());
+    panic("release");
   }
 
   lk.cpu = None;
@@ -57,7 +57,7 @@ pub fn release(lk: &mut Spinlock) {
 }
 
 fn holding(lk: &Spinlock) -> bool {
-  lk.locked.load(Ordering::Acquire) && lk.cpu.map(|c| std::ptr::eq(c, mycpu())).unwrap_or(false)
+  lk.locked.load(Ordering::Acquire) && lk.cpu.map(|c| core::ptr::eq(c, mycpu())).unwrap_or(false)
 }
 
 pub fn push_off() {
@@ -74,10 +74,10 @@ pub fn push_off() {
 pub fn pop_off() {
   let c = mycpu();
   if intr_get() != 0 {
-    panic("pop_off - interruptible".as_bytes());
+    panic("pop_off - interruptible");
   }
   if c.noff < 1 {
-    panic("pop_off".as_bytes());
+    panic("pop_off");
   }
   c.noff -= 1;
   if c.noff == 0 && c.intena != 0 {

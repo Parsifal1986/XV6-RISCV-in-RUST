@@ -2,7 +2,7 @@ use crate::memlayout::{KERNBASE, PHYSTOP, PLIC, TRAMPOLINE, UART0, VIRTIO0};
 use crate::proc::proc_mapstacks;
 use crate::riscv::{sfence_vma, w_satp, PagetableT, PteT, MAKE_SATP, MAXVA, PA2PTE, PGSIZE, PTE2PA, PTE_R, PTE_U, PTE_V, PTE_W, PTE_X, PX};
 use crate::kalloc::kalloc;
-use crate::defs::panic;
+use crate::printf::panic;
 use core::ptr::write_bytes;
 use core::ptr::null_mut;
 
@@ -42,13 +42,13 @@ pub fn kvmmake() -> PagetableT {
 
 pub fn kvmmap(kpgtbl: PagetableT, va: u64, pa: u64, sz: u64, perm: i32) {
   if mappage(kpgtbl, va, sz, pa, perm) != 0 {
-    panic("kvmmap".as_bytes());
+    panic("kvmmap");
   }
 }
 
 pub fn walk(mut pagetable: PagetableT, va: u64, alloc: i32) -> Option<&'static mut PteT> {
   if va >= MAXVA {
-    panic("walk".as_bytes());
+    panic("walk");
   }
 
   for i in 2..0 {
@@ -96,15 +96,15 @@ pub fn mappage(pagetable: PagetableT, va: u64, size: u64, mut pa: u64, perm: i32
   let mut pte: Option<&'static mut PteT>;
 
   if va % PGSIZE != 0 {
-    panic("mappage: va not aligned".as_bytes());
+    panic("mappage: va not aligned");
   }
   
   if size % PGSIZE != 0 {
-    panic("mappage: size not aligned".as_bytes());
+    panic("mappage: size not aligned");
   }
 
   if size == 0 {
-    panic("mappage: size zero".as_bytes());
+    panic("mappage: size zero");
   }
   a = va;
   last = va + size - PGSIZE;
@@ -115,7 +115,7 @@ pub fn mappage(pagetable: PagetableT, va: u64, size: u64, mut pa: u64, perm: i32
       None => return -1,
     };
     if *pte_value & PTE_V as u64 != 0 {
-      panic("mappage: remap".as_bytes());
+      panic("mappage: remap");
     }
     *pte_value = PA2PTE(pa) | perm as u64 | PTE_V;
     if a == last {

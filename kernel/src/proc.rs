@@ -1,6 +1,4 @@
-use std::fs::File;
-
-use crate::file::Inode;
+use crate::file::{Inode, File};
 use crate::spinlock::{acquire, pop_off, push_off, release, Spinlock};
 use crate::riscv::{r_tp, PagetableT};
 use crate::param::{NCPU, NOFILE, NPROC};
@@ -56,7 +54,7 @@ pub struct Cpu {
 impl Cpu {
   pub const fn new() -> Self {
     Cpu {
-      proc: std::ptr::null_mut(),
+      proc: core::ptr::null_mut(),
       context: Context::new(),
       noff: 0,
       intena: 0

@@ -2,7 +2,7 @@ use crate::riscv::{PGROUNDUP, PGSIZE};
 use crate::spinlock::{acquire, initlock, release, Spinlock};
 use crate::memlayout::PHYSTOP;
 use core::ptr::null_mut;
-use std::ptr::write_bytes;
+use core::ptr::write_bytes;
 
 extern "C" {
   static etext: u8;
@@ -30,7 +30,7 @@ impl KMem {
 static mut KMEM: KMem = KMem::new();
 
 pub fn kinit() {
-  initlock(unsafe { &mut KMEM.lock }, Some("kmem"));
+  initlock(unsafe { &mut KMEM.lock }, Some("kmem".as_bytes()));
   freerange(unsafe{&end as *const u8}, PHYSTOP as *const u8);
 }
 

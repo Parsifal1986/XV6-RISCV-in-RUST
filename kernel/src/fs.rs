@@ -1,6 +1,8 @@
-use std::path;
-
-use crate::{file::Inode, spinlock::{initlock, Spinlock}, stat::Stat, types};
+use core::mem::size_of;
+use crate::file::Inode;
+use crate::spinlock::{initlock, Spinlock};
+use crate::stat::Stat;
+use crate::types;
 
 pub const ROOTINO: u32 = 1;
 pub const BSIZE: usize = 1024;
@@ -51,7 +53,7 @@ static mut ITABLE: Itable = Itable::new();
 pub const FSMAGIC: u32 = 0x10203040;
 
 pub const NDIRECT: usize = 12;
-pub const NINDIRECT: usize = BSIZE / std::mem::size_of::<u32>();
+pub const NINDIRECT: usize = BSIZE / core::mem::size_of::<u32>();
 pub const MAXFILE: usize = NDIRECT + NINDIRECT;
 
 #[repr(C)]
@@ -64,7 +66,7 @@ pub struct Dinode {
   addrs: [u32; NDIRECT + 1],
 }
 
-pub const IPB: usize = BSIZE / std::mem::size_of::<Dinode>();
+pub const IPB: usize = BSIZE / size_of::<Dinode>();
 
 fn iblock(i: u32, sb: &Superblock) -> u32 {
   (i / IPB as u32) + sb.inodestart

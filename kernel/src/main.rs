@@ -1,4 +1,7 @@
-use crate::{kalloc::kinit, proc::cpuid, vm::{kvminit, kvminithart}};
+#![no_std]
+#![no_main]
+
+use crate::{console::consoleinit, kalloc::kinit, printf::printfinit, proc::cpuid, vm::{kvminit, kvminithart}};
 
 mod vm;
 mod riscv;
@@ -25,7 +28,8 @@ mod stat;
 
 fn main() {
   if cpuid() == 0 {
-    
+    consoleinit();
+    printfinit();
     kinit();
     kvminit();
     kvminithart();

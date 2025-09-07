@@ -54,7 +54,7 @@ pub fn uartinit() {
 
   write_reg(IER as *mut u8, IER_TX_ENABLE | IER_RX_ENABLE);
 
-  initlock(unsafe { &mut TX_LOCK }, Some("uart"));
+  initlock(unsafe { &mut TX_LOCK }, Some("uart".as_bytes()));
 }
 
 pub fn uartwrite(buf: &mut[u8], n: i32) {

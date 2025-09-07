@@ -36,4 +36,5 @@ pub const fn kstack(p: u64) -> u64 {
     TRAMPOLINE - (p + 1) * 2 * PGSIZE
 }
 
-pub const TRAPFRAME: u64 = TRAMPOLINE - PGSIZE;
+#[no_mangle]
+pub static TRAPFRAME: u64 = TRAMPOLINE - PGSIZE;

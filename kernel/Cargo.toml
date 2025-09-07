@@ -4,6 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-
-[package.metadata.cargo-xbuild]
-link-args = ["-Tlinker.ld"]
+cc = "1.0"

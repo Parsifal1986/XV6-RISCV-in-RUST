@@ -2,8 +2,11 @@
 members = ["kernel", "user", "mkfs"]
 resolver = "2"
 
-[workspace.package]
-edition = "2021"
+[profile.dev]
+panic = "abort"
 
-[workspace.metadata]
-rust-target = "riscv64imac-unknown-none-elf"
+[profile.release]
+panic = "abort"
+
+[build]
+target = "riscv64gc-unknown-none-elf"

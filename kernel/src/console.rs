@@ -1,6 +1,7 @@
+use crate::file::{DEVSW, CONSOLE};
 use crate::proc::{either_copyin, either_copyout, killed, myproc, sleep};
-use crate::spinlock::{acquire, release, Spinlock};
-use crate::uart::{uartputc_sync, uartwrite};
+use crate::spinlock::{acquire, initlock, release, Spinlock};
+use crate::uart::{uartinit, uartputc_sync, uartwrite};
 
 pub const BASKSPACE:u64 = 0x100;
 
@@ -109,4 +110,15 @@ pub fn consoleread(user_dst: i32, mut dst: u64, mut n: i32) -> i32 {
   release(unsafe { &mut CONS.lock });
 
   return target as i32 - n;
+}
+
+pub fn consoleinit() {
+  initlock(unsafe { &mut CONS.lock }, Some("console".as_bytes()));
+
+  uartinit();
+
+  unsafe {
+    DEVSW[CONSOLE as usize].read = consoleread;
+    DEVSW[CONSOLE as usize].write = consolewrite;
+  }
 }

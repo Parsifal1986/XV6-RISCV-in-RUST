@@ -2,6 +2,8 @@
   # and causes each hart (i.e. CPU) to jump there.
   # kernel.ld causes the following code to
   # be placed at 0x80000000.
+.extern STACK0
+
 .section .text
 .global _entry
 _entry:
@@ -9,7 +11,7 @@ _entry:
   # stack0 is declared in start.c,
   # with a 4096-byte stack per CPU.
   # sp = stack0 + ((hartid + 1) * 4096)
-  la sp, stack0
+  la sp, STACK0
   li a0, 1024*4
   csrr a1, mhartid
   addi a1, a1, 1

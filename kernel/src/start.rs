@@ -1,7 +1,11 @@
-use std::arch::asm;
+use core::arch::asm;
 
 use crate::main;
+use crate::param::NCPU;
 use crate::riscv::*;
+
+#[no_mangle]
+pub static STACK0: [u8; 4096 * NCPU as usize] = [0; 4096 * NCPU as usize];
 
 pub fn start() {
   let mut x: u64 = r_mstatus();

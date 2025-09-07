@@ -1,4 +1,4 @@
-use std::arch::asm;
+use core::arch::asm;
 
 // determine which hart is this
 #[inline(always)]
@@ -295,7 +295,7 @@ pub const SATP_SV39: u64 = 8 << 60;
 
 #[inline(always)]
 pub fn MAKE_SATP(pagetable: u64) -> u64 {
-  (SATP_SV39 | (pagetable >> 12))
+  SATP_SV39 | (pagetable >> 12)
 }
 
 #[inline(always)]
@@ -490,7 +490,7 @@ pub const PXMASK: u64 = 0x1FF;
 
 #[inline(always)]
 pub fn PXSHIFT(level: u64) -> u64 {
-  (level * 9 + PGSHIFT)
+  level * 9 + PGSHIFT
 }
 
 #[inline(always)]

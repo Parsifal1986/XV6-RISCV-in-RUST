@@ -3,7 +3,7 @@ use crate::sleeplock::Sleeplock;
 use crate::pipe::Pipe;
 
 #[repr(C)]
-struct File {
+pub struct File {
   file_type: FileType,
   ref_count: i32,
   readable: u8,
@@ -56,13 +56,40 @@ impl Inode {
 }
 
 #[repr(C)]
-struct Devsw {
-  read: fn(i32, u64, i32) -> i32,
-  write: fn(i32, u64, i32) -> i32,
+pub struct Devsw {
+  pub(crate) read: fn(i32, u64, i32) -> i32,
+  pub(crate) write: fn(i32, u64, i32) -> i32,
 }
 
-extern "C" {
-  static mut devsw: [Devsw; 256];
+impl Devsw{
+  pub const fn new() -> Self {
+    Devsw { read: Self::dummy_read, write: Self::dummy_write }
+  }
+
+  const fn dummy_read(_: i32, _: u64, _: i32) -> i32 {
+    -1
+  }
+
+  const fn dummy_write(_: i32, _: u64, _: i32) -> i32 {
+    -1
+  }
 }
 
-const CONSOLE: i32 = 1;
+pub static mut DEVSW: [Devsw; 10] = [const { Devsw::new() }; 10];
+
+pub const CONSOLE: i32 = 1;
+
+impl File {
+  pub const fn new() -> Self {
+    File {
+      file_type: FileType::None,
+      ref_count: 0,
+      readable: 0,
+      writable: 0,
+      pipe: None,
+      ip: None,
+      off: 0,
+      major: 0,
+    }
+  }
+}
