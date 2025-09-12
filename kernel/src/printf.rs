@@ -49,9 +49,7 @@ fn printptr(x: u64) {
   }
 }
 
-pub fn printf(fmt: &str, args: fmt::Arguments) -> i32 {
-  let (i, cx, c0, c1, c2): (i32, i32, i32, i32, i32);
-
+pub fn printf(args: fmt::Arguments) -> i32 {
   if unsafe { PANICKING == 0 } {
     acquire(unsafe { &mut PR });
   }
@@ -63,7 +61,8 @@ pub fn printf(fmt: &str, args: fmt::Arguments) -> i32 {
   if unsafe { PANICKING == 0 } {
     release(unsafe { &mut PR });
   }
-  todo!()
+
+  0
 }
 
 struct Writer;
@@ -79,7 +78,7 @@ impl fmt::Write for Writer {
 
 pub fn panic(msg: &str) -> ! {
   unsafe { PANICKING = 1; }
-  printf("panic: %s\n", format_args!("{}", msg));
+  printf(format_args!("panic: {}\n", msg));
   unsafe { PANICKED = 1; }
   loop{}
 }

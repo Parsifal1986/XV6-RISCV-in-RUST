@@ -10,6 +10,9 @@ extern "C" {
   static etext: u8;
 }
 
+pub const SBRK_EAGER: i32 = 1;
+pub const SBRK_LAZY: i32 = 2;
+
 static mut KERNEL_PAGETABLE: PagetableT = 0 as PagetableT;
 
 pub fn kvmmake() -> PagetableT {
@@ -160,6 +163,22 @@ pub fn uvmclear(pagetable: PagetableT, va: u64) {
   todo!()
 }
 
+pub fn copyin(pagetable: PagetableT, dst: u64, src: u64, len: u64) -> i32 {
+  todo!()
+}
+
 pub fn copyout(pagetable: PagetableT, va: u64, src: u64, len: u64) -> i32 {
+  todo!()
+}
+
+pub fn copyinstr(pagetable: PagetableT, dst: u64, src: u64, max: u64) -> i32 {
+  todo!()
+}
+
+pub fn vmfault(pagetable: PagetableT, va: u64, read: i32) -> u64 {
+  todo!()
+}
+
+pub fn ismapped(pagetable: PagetableT, va: u64) -> i32 {
   todo!()
 }

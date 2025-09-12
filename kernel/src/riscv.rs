@@ -162,6 +162,16 @@ pub fn r_sepc() -> u64 {
 }
 
 #[inline(always)]
+pub fn w_sepc(x: u64) {
+  unsafe {
+    asm!(
+      "csrw sepc, {0}",
+      in(reg) x
+    );
+  }
+}
+
+#[inline(always)]
 pub fn r_medeleg() -> u64 {
   let x : u64;
   unsafe {

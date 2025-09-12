@@ -117,18 +117,18 @@ pub struct Proc {
   chan: u64,
   killed: bool,
   xstate: u64,
-  pid: u64,
+  pub(crate) pid: u64,
 
   parent: &'static mut Proc,
 
-  kstatck: u64,
+  pub(crate) kstack: u64,
   pub(crate) sz: u64,
   pub(crate) pagetable: PagetableT,
   pub(crate) trapframe: *mut Trapframe,
   context: Context,
-  ofile: [*mut File; NOFILE as usize],
+  pub(crate) ofile: [Option<*mut File>; NOFILE as usize],
   cwd: *mut Inode,
-  name: [u8; 16],
+  pub(crate) name: [u8; 16],
 }
 
 pub fn proc_mapstacks(kpgtbl: PagetableT) {
@@ -191,6 +191,12 @@ pub fn either_copyin(dst: *const u8, user_src: i32, src: *const u8, len: u64) ->
   todo!()
 }
 
+pub fn setkilled(p: &mut Proc) {
+  acquire(&mut p.lock);
+  p.killed = true;
+  release(&mut p.lock);
+}
+
 pub fn killed(p: &mut Proc) -> bool {
   let k: bool;
 
@@ -199,4 +205,32 @@ pub fn killed(p: &mut Proc) -> bool {
   release(&mut p.lock);
   
   k
+}
+
+pub fn kexit(status: i32) {
+  todo!()
+}
+
+pub fn yieldcpu() {
+  todo!()
+}
+
+pub fn wakeup(chan: *mut u8) {
+  todo!()
+}
+
+pub fn kfork() -> i32 {
+  todo!()
+}
+
+pub fn kwait(addr: u64) -> i32 {
+  todo!()
+}
+
+pub fn kkill(pid: i32) -> i32 {
+  todo!()
+}
+
+pub fn growproc(n: i32) -> i32 {
+  todo!()
 }

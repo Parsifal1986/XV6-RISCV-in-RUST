@@ -25,6 +25,12 @@ mod pipe;
 mod log;
 mod buf;
 mod stat;
+mod syscall;
+mod trap;
+mod plic;
+mod virtio_disk;
+mod sysfile;
+mod sysproc;
 
 fn main() {
   if cpuid() == 0 {

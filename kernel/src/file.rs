@@ -93,3 +93,7 @@ impl File {
     }
   }
 }
+
+pub fn filedup(f: *mut File) {
+  todo!()
+}
