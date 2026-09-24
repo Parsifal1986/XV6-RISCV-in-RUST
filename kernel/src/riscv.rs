@@ -259,6 +259,10 @@ pub fn w_stimecmp(x: u64) {
   }
 }
 
+// Machine Environment Configuration Register
+pub const MENVCFG_STCE: u64 = 1 << 63; // enable the sstc extension (stimecmp)
+pub const MENVCFG_ADUE: u64 = 1 << 61; // hardware updates of PTE A/D bits
+
 #[inline(always)]
 pub fn r_menvcfg() -> u64 {
   let x : u64;
@@ -304,7 +308,7 @@ pub fn w_pmpaddr0(x: u64) {
 pub const SATP_SV39: u64 = 8 << 60;
 
 #[inline(always)]
-pub fn MAKE_SATP(pagetable: u64) -> u64 {
+pub const fn MAKE_SATP(pagetable: u64) -> u64 {
   SATP_SV39 | (pagetable >> 12)
 }
 
@@ -398,10 +402,10 @@ pub fn intr_off() {
   w_sstatus(r_sstatus() & !SSTATUS_SIE);
 }
 
+// are device interrupts enabled?
 #[inline(always)]
-pub fn intr_get() -> u64 {
-  let x: u64 = r_sstatus() & SSTATUS_SIE;
-  if x != 0 { 1 } else { 0 }
+pub fn intr_get() -> bool {
+  (r_sstatus() & SSTATUS_SIE) != 0
 }
 
 #[inline(always)]
@@ -409,7 +413,7 @@ pub fn r_sp() -> u64 {
   let x: u64;
   unsafe {
     asm!(
-      "csrr {0}, sp",
+      "mv {0}, sp",
       out(reg) x
     );
   }
@@ -421,7 +425,7 @@ pub fn r_tp() -> u64 {
   let x: u64;
   unsafe {
     asm!(
-      "csrr {0}, tp",
+      "mv {0}, tp",
       out(reg) x
     );
   }
@@ -432,7 +436,7 @@ pub fn r_tp() -> u64 {
 pub fn w_tp(x: u64) {
   unsafe {
     asm!(
-      "csrw tp, {0}",
+      "mv tp, {0}",
       in(reg) x
     );
   }
@@ -443,35 +447,57 @@ pub fn r_ra() -> u64 {
   let x: u64;
   unsafe {
     asm!(
-      "csrr {0}, ra",
+      "mv {0}, ra",
       out(reg) x
     );
   }
   x
 }
 
+// flush the TLB.
 #[inline(always)]
 pub fn sfence_vma() {
+  // the zero, zero means flush all TLB entries.
   unsafe {
-    asm! {
+    asm!(
       "sfence.vma zero, zero"
-    };
+    );
   }
 }
 
-pub type PagetableT = *mut u64;
+// wait for an interrupt.
+#[inline(always)]
+pub fn wfi() {
+  unsafe {
+    asm!(
+      "wfi"
+    );
+  }
+}
+
+// order all memory and device I/O accesses.
+#[inline(always)]
+pub fn fence_iorw() {
+  unsafe {
+    asm!(
+      "fence iorw, iorw"
+    );
+  }
+}
+
+pub type PagetableT = *mut u64; // 512 PTEs
 pub type PteT = u64;
 
 pub const PGSIZE: u64 = 4096;
 pub const PGSHIFT: u64 = 12;
 
 #[inline(always)]
-pub fn PGROUNDUP(sz: u64) -> u64 {
+pub const fn PGROUNDUP(sz: u64) -> u64 {
   (sz + PGSIZE - 1) & !(PGSIZE - 1)
 }
 
 #[inline(always)]
-pub fn PGROUNDDOWN(a: u64) -> u64 {
+pub const fn PGROUNDDOWN(a: u64) -> u64 {
   a & !(PGSIZE - 1)
 }
 
@@ -482,29 +508,29 @@ pub const PTE_X: u64 = 1 << 3;
 pub const PTE_U: u64 = 1 << 4;
 
 #[inline(always)]
-pub fn PA2PTE(pa: u64) -> u64 {
+pub const fn PA2PTE(pa: u64) -> u64 {
   (pa >> 12) << 10
 }
 
 #[inline(always)]
-pub fn PTE2PA(pte: u64) -> u64 {
+pub const fn PTE2PA(pte: u64) -> u64 {
   (pte >> 10) << 12
 }
 
 #[inline(always)]
-pub fn PTE_FLAGS(pte: u64) -> u64 {
+pub const fn PTE_FLAGS(pte: u64) -> u64 {
   pte & 0x3FF
 }
 
 pub const PXMASK: u64 = 0x1FF;
 
 #[inline(always)]
-pub fn PXSHIFT(level: u64) -> u64 {
+pub const fn PXSHIFT(level: u64) -> u64 {
   level * 9 + PGSHIFT
 }
 
 #[inline(always)]
-pub fn PX(level: u64, va: u64) -> u64 {
+pub const fn PX(level: u64, va: u64) -> u64 {
   (va >> PXSHIFT(level)) & PXMASK
 }
 

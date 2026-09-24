@@ -1,1 +1,4 @@
 /target
+fs.img
+*.img
+.gdbinit

@@ -1,122 +1,149 @@
-use crate::printf::{printf, panic};
+use crate::printf::panic;
 use crate::proc::myproc;
-use crate::sysproc::{sys_fork, sys_kill, sys_uptime, sys_wait, sys_exit, sys_getpid, sys_sbrk, sys_pause};
-use crate::sysfile::{sys_dup, sys_open, sys_read, sys_write, sys_close, sys_fstat, sys_pipe, sys_chdir, sys_exec, sys_mknod, sys_unlink, sys_link, sys_mkdir};
+use crate::string::{cstr, strlen};
+use crate::sysfile::{
+  sys_chdir, sys_close, sys_dup, sys_exec, sys_fstat, sys_link, sys_mkdir, sys_mknod, sys_open, sys_pipe, sys_read,
+  sys_unlink, sys_write,
+};
+use crate::sysproc::{sys_exit, sys_fork, sys_getpid, sys_kill, sys_pause, sys_sbrk, sys_uptime, sys_wait};
 use crate::vm::{copyin, copyinstr};
 
-pub const SYS_FORK: usize = 1;
-pub const SYS_EXIT: usize = 2;
-pub const SYS_WAIT: usize = 3;
-pub const SYS_PIPE: usize = 4;
-pub const SYS_READ: usize = 5;
-pub const SYS_KILL: usize = 6;
-pub const SYS_EXEC: usize = 7;
-pub const SYS_FSTAT: usize = 8;
-pub const SYS_CHDIR: usize = 9;
-pub const SYS_DUP: usize = 10;
-pub const SYS_GETPID: usize = 11;
-pub const SYS_SBRK: usize = 12;
-pub const SYS_PAUSE: usize = 13;
-pub const SYS_UPTIME: usize = 14;
-pub const SYS_OPEN: usize = 15;
-pub const SYS_WRITE: usize = 16;
-pub const SYS_MKNOD: usize = 17;
-pub const SYS_UNLINK: usize = 18;
-pub const SYS_LINK: usize = 19;
-pub const SYS_MKDIR: usize = 20;
-pub const SYS_CLOSE: usize = 21;
+// System call numbers
+pub const SYS_fork: usize = 1;
+pub const SYS_exit: usize = 2;
+pub const SYS_wait: usize = 3;
+pub const SYS_pipe: usize = 4;
+pub const SYS_read: usize = 5;
+pub const SYS_kill: usize = 6;
+pub const SYS_exec: usize = 7;
+pub const SYS_fstat: usize = 8;
+pub const SYS_chdir: usize = 9;
+pub const SYS_dup: usize = 10;
+pub const SYS_getpid: usize = 11;
+pub const SYS_sbrk: usize = 12;
+pub const SYS_pause: usize = 13;
+pub const SYS_uptime: usize = 14;
+pub const SYS_open: usize = 15;
+pub const SYS_write: usize = 16;
+pub const SYS_mknod: usize = 17;
+pub const SYS_unlink: usize = 18;
+pub const SYS_link: usize = 19;
+pub const SYS_mkdir: usize = 20;
+pub const SYS_close: usize = 21;
 
-pub fn fetchaddr(addr: u64, ip: *mut u64) -> i32 {
-  let p = myproc().unwrap();
-
-  if addr >= p.sz || addr + size_of::<u64>() as u64 > p.sz {
-    return -1;
-  }
-  if copyin(p.pagetable, ip as u64, addr, size_of::<u64>() as u64) != 0 {
-    return -1;
+// Fetch the u64 at addr from the current process.
+pub fn fetchaddr(addr: u64, ip: &mut u64) -> i32 {
+  let p = myproc();
+  unsafe {
+    // both tests needed, in case of overflow
+    if addr >= (*p).sz || addr.wrapping_add(size_of::<u64>() as u64) > (*p).sz {
+      return -1;
+    }
+    if copyin((*p).pagetable, ip as *mut u64 as *mut u8, addr, size_of::<u64>() as u64) != 0 {
+      return -1;
+    }
   }
   0
 }
 
-pub fn fetchstr(addr: u64, buf: &mut [u8], max: i32) -> i32 {
-  let p = myproc().unwrap();
-  if copyinstr(p.pagetable, buf.as_mut_ptr() as u64, addr, max as u64) < 0 {
-    return -1;
+// Fetch the nul-terminated string at addr from the current process.
+// Returns length of string, not including nul, or -1 for error.
+pub fn fetchstr(addr: u64, buf: &mut [u8]) -> i32 {
+  let p = myproc();
+  unsafe {
+    if copyinstr((*p).pagetable, buf.as_mut_ptr(), addr, buf.len() as u64) < 0 {
+      return -1;
+    }
   }
-  buf.len() as i32
+  strlen(buf.as_ptr()) as i32
 }
 
 fn argraw(n: i32) -> u64 {
-  let p = myproc().unwrap();
-  match n {
-    0 => unsafe { (*p.trapframe).a0 },
-    1 => unsafe { (*p.trapframe).a1 },
-    2 => unsafe { (*p.trapframe).a2 },
-    3 => unsafe { (*p.trapframe).a3 },
-    4 => unsafe { (*p.trapframe).a4 },
-    5 => unsafe { (*p.trapframe).a5 },
-    _ => panic("argraw"),
+  let p = myproc();
+  unsafe {
+    let tf = (*p).trapframe;
+    match n {
+      0 => (*tf).a0,
+      1 => (*tf).a1,
+      2 => (*tf).a2,
+      3 => (*tf).a3,
+      4 => (*tf).a4,
+      5 => (*tf).a5,
+      _ => panic("argraw"),
+    }
   }
 }
 
-pub fn argint(n: i32, ip: &mut i32) -> i32 {
+// Fetch the nth 32-bit system call argument.
+pub fn argint(n: i32, ip: &mut i32) {
   *ip = argraw(n) as i32;
-  0
 }
 
-pub fn argaddr(n: i32, ip: &mut u64) -> i32 {
+// Retrieve an argument as a pointer.
+// Doesn't check for legality, since
+// copyin/copyout will do that.
+pub fn argaddr(n: i32, ip: &mut u64) {
   *ip = argraw(n);
-  0
 }
 
-pub fn argstr(n: i32, buf: &mut [u8], max: i32) -> i32 {
-  let addr = argraw(n);
-  fetchstr(addr, buf, max)
+// Fetch the nth word-sized system call argument as a null-terminated string.
+// Copies into buf, at most buf.len().
+// Returns string length if OK (not including nul), -1 if error.
+pub fn argstr(n: i32, buf: &mut [u8]) -> i32 {
+  let mut addr = 0;
+  argaddr(n, &mut addr);
+  fetchstr(addr, buf)
+}
+
+// the NUL-terminated string in buf, as fetched by argstr().
+pub fn argbuf(buf: &[u8]) -> &[u8] {
+  cstr(buf)
 }
 
 type SysCallFn = fn() -> u64;
 
-fn emptyfn() -> u64 {
-  0
-}
-
-static SYSCALLS: [SysCallFn; 22] = [
-  emptyfn,
-  sys_fork,
-  sys_exit,
-  sys_wait,
-  sys_pipe,
-  sys_read,
-  sys_kill,
-  sys_exec,
-  sys_fstat,
-  sys_chdir,
-  sys_dup,
-  sys_getpid,
-  sys_sbrk,
-  sys_pause,
-  sys_uptime,
-  sys_open,
-  sys_write,
-  sys_mknod,
-  sys_unlink,
-  sys_link,
-  sys_mkdir,
-  sys_close,
+// An array mapping syscall numbers
+// to the function that handles the system call.
+static SYSCALLS: [Option<SysCallFn>; 22] = [
+  None,
+  Some(sys_fork),
+  Some(sys_exit),
+  Some(sys_wait),
+  Some(sys_pipe),
+  Some(sys_read),
+  Some(sys_kill),
+  Some(sys_exec),
+  Some(sys_fstat),
+  Some(sys_chdir),
+  Some(sys_dup),
+  Some(sys_getpid),
+  Some(sys_sbrk),
+  Some(sys_pause),
+  Some(sys_uptime),
+  Some(sys_open),
+  Some(sys_write),
+  Some(sys_mknod),
+  Some(sys_unlink),
+  Some(sys_link),
+  Some(sys_mkdir),
+  Some(sys_close),
 ];
 
 pub fn syscall() {
-  let p = myproc().unwrap();
-  let num = unsafe { (*p.trapframe).a7 };
-
-  if num > 0 && (num as usize) < SYSCALLS.len() && !core::ptr::fn_addr_eq(SYSCALLS[num as usize], emptyfn as fn() -> u64) {
-    unsafe {
-      (*p.trapframe).a0 = SYSCALLS[num as usize]();
-    }
-  } else {
-    unsafe {
-      printf(format_args!("{} {}: unknown sys call {}\n", p.pid, core::str::from_utf8_unchecked(&p.name), num));
-      (*p.trapframe).a0 = u64::MAX;
+  let p = myproc();
+  unsafe {
+    let num = (*(*p).trapframe).a7 as usize;
+    match SYSCALLS.get(num) {
+      Some(Some(f)) => {
+        // Use num to lookup the system call function for num, call it,
+        // and store its return value in p->trapframe->a0
+        (*(*p).trapframe).a0 = f();
+      }
+      _ => {
+        let name = core::str::from_utf8(cstr(&(*p).name)).unwrap_or("???");
+        printf!("{} {}: unknown sys call {}\n", (*p).pid, name, num);
+        (*(*p).trapframe).a0 = u64::MAX;
+      }
     }
   }
 }

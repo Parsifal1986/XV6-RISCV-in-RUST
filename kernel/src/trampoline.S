@@ -10,9 +10,7 @@
         # a page boundary.
         #
 
-.extern TRAPFRAME
-
-.section trampsec
+.section trampsec, "ax"
 .globl trampoline
 .globl usertrap
 trampoline:
@@ -20,7 +18,7 @@ trampoline:
 .globl uservec
 uservec:    
 	#
-        # trap.c sets stvec to point here, so
+        # trap.rs sets stvec to point here, so
         # traps from user space start here,
         # in supervisor mode, but with a
         # user page table.
@@ -33,7 +31,7 @@ uservec:
         # each process has a separate p->trapframe memory area,
         # but it's mapped to the same virtual address
         # (TRAPFRAME) in every process's user page table.
-        li a0, TRAPFRAME
+        li a0, {TRAPFRAME}
         
         # save the user registers in TRAPFRAME
         sd ra, 40(a0)
@@ -101,12 +99,16 @@ userret:
         # usertrap() returns here, with user satp in a0.
         # return from kernel to user.
 
+        # flush icache, in case this is the first time
+        # we're running this proc on this hart.
+        fence.i
+
         # switch to the user page table.
         sfence.vma zero, zero
         csrw satp, a0
         sfence.vma zero, zero
 
-        li a0, TRAPFRAME
+        li a0, {TRAPFRAME}
 
         # restore all but a0 from TRAPFRAME
         ld ra, 40(a0)
@@ -144,5 +146,5 @@ userret:
         ld a0, 112(a0)
         
         # return to user mode and user pc.
-        # usertrapret() set up sstatus and sepc.
+        # prepare_return() sets up sstatus and sepc.
         sret

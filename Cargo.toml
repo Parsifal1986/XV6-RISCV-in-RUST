@@ -7,6 +7,9 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+debug = true
 
-[build]
-target = "riscv64gc-unknown-none-elf"
+[profile.release.package.user]
+opt-level = "s"
+debug = false
+strip = true

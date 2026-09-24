@@ -1,11 +1,12 @@
-pub const T_DIR: i16 = 1;
-pub const T_FILE: i16 = 2;
-pub const T_DEVICE: i16 = 3;
+pub const T_DIR: i16 = 1;    // Directory
+pub const T_FILE: i16 = 2;   // File
+pub const T_DEVICE: i16 = 3; // Device
 
+#[repr(C)]
 pub struct Stat {
-  dev: i32,
-  ino: u32,
-  inode_type: i16,
-  nlink: i16,
-  size: u64,
+  pub dev: i32,     // File system's disk device
+  pub ino: u32,     // Inode number
+  pub typ: i16,     // Type of file
+  pub nlink: i16,   // Number of links to file
+  pub size: u64,    // Size of file in bytes
 }

@@ -3,4 +3,9 @@ name = "user"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+test = false
+bench = false
+
 [dependencies]

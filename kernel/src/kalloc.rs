@@ -1,67 +1,90 @@
+// Physical memory allocator, for user processes,
+// kernel stacks, page-table pages,
+// and pipe buffers. Allocates whole 4096-byte pages.
+
+use core::ptr::{null_mut, write_bytes};
+
+use crate::memlayout::PHYSTOP;
+use crate::printf::panic;
 use crate::riscv::{PGROUNDUP, PGSIZE};
 use crate::spinlock::{acquire, initlock, release, Spinlock};
-use crate::memlayout::PHYSTOP;
-use core::ptr::null_mut;
-use core::ptr::write_bytes;
 
 extern "C" {
-  static etext: u8;
+  // first address after kernel.
+  // defined by kernel.ld.
   static end: u8;
 }
 
-pub struct Run {
-  pub next: *mut Run,
+struct Run {
+  next: *mut Run,
 }
 
-pub struct KMem {
-  pub lock: Spinlock,
-  pub freelist: *mut Run,
-} // 改进方向：受保护的数据放到Spinlock中，可以避免unsafe
-
-impl KMem {
-  pub const fn new() -> Self {
-    KMem {
-      lock: Spinlock::new(),
-      freelist: null_mut(),
-    }
-  }
+struct KMem {
+  lock: Spinlock,
+  freelist: *mut Run,
 }
 
-static mut KMEM: KMem = KMem::new();
+static mut KMEM: KMem = KMem {
+  lock: Spinlock::new(),
+  freelist: null_mut(),
+};
+
+fn end_addr() -> u64 {
+  &raw const end as u64
+}
 
 pub fn kinit() {
-  initlock(unsafe { &mut KMEM.lock }, Some("kmem".as_bytes()));
-  freerange(unsafe{&end as *const u8}, PHYSTOP as *const u8);
+  unsafe {
+    initlock(&raw mut KMEM.lock, "kmem");
+  }
+  freerange(end_addr(), PHYSTOP);
 }
 
-pub fn freerange(pa_start: *const u8, pa_end: *const u8) {
-  let mut p = PGROUNDUP(pa_start as u64);
-  while p + PGSIZE <= pa_end as u64 {
+fn freerange(pa_start: u64, pa_end: u64) {
+  let mut p = PGROUNDUP(pa_start);
+  while p + PGSIZE <= pa_end {
     kfree(p as *mut u8);
     p += PGSIZE;
   }
 }
 
+// Free the page of physical memory pointed at by pa,
+// which normally should have been returned by a
+// call to kalloc().  (The exception is when
+// initializing the allocator; see kinit above.)
 pub fn kfree(pa: *mut u8) {
-  let r: *mut Run;
-
-  if pa as u64 % PGSIZE != 0 || pa < unsafe { &end as *const u8 } as *mut u8 || pa as u64 >= PHYSTOP {
-    panic!("kfree");
+  if (pa as u64) % PGSIZE != 0 || (pa as u64) < end_addr() || (pa as u64) >= PHYSTOP {
+    panic("kfree");
   }
 
-  unsafe { write_bytes(pa, 1, PGSIZE as usize) };
-
-  r = pa as *mut Run;
-
-  acquire(unsafe { &mut KMEM.lock });
   unsafe {
+    // Fill with junk to catch dangling refs.
+    write_bytes(pa, 1, PGSIZE as usize);
+
+    let r = pa as *mut Run;
+
+    acquire(&raw mut KMEM.lock);
     (*r).next = KMEM.freelist;
     KMEM.freelist = r;
+    release(&raw mut KMEM.lock);
   }
-
-  release(unsafe { &mut KMEM.lock });
 }
 
-pub fn kalloc() -> u64 {
-  todo!();
+// Allocate one 4096-byte page of physical memory.
+// Returns a pointer that the kernel can use.
+// Returns null if the memory cannot be allocated.
+pub fn kalloc() -> *mut u8 {
+  unsafe {
+    acquire(&raw mut KMEM.lock);
+    let r = KMEM.freelist;
+    if !r.is_null() {
+      KMEM.freelist = (*r).next;
+    }
+    release(&raw mut KMEM.lock);
+
+    if !r.is_null() {
+      write_bytes(r as *mut u8, 5, PGSIZE as usize); // fill with junk
+    }
+    r as *mut u8
+  }
 }

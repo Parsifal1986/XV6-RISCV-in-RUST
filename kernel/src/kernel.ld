@@ -10,7 +10,7 @@ SECTIONS
   . = 0x80000000;
 
   .text : {
-    kernel/entry.o(_entry)
+    *(.text.entry)
     *(.text .text.*)
     . = ALIGN(0x1000);
     _trampoline = .;
@@ -25,6 +25,8 @@ SECTIONS
     *(.srodata .srodata.*) /* do not need to distinguish this from .rodata */
     . = ALIGN(16);
     *(.rodata .rodata.*)
+    . = ALIGN(16);
+    *(.eh_frame .eh_frame.*)
   }
 
   .data : {
