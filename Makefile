@@ -59,8 +59,10 @@ user:
 mkfs:
 	$(CARGO) build $(CARGOFLAGS) -p mkfs
 
+# usertests expects a file named README.
 fs.img: user mkfs README.md
-	$(MKFS) fs.img README.md $(addprefix $(OUT)/,$(UPROGS))
+	cp README.md $(OUT)/README
+	$(MKFS) fs.img $(OUT)/README $(addprefix $(OUT)/,$(UPROGS))
 
 qemu: kernel fs.img
 	$(QEMU) $(QEMUOPTS)
