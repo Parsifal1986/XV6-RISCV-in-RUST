@@ -2,3 +2,4 @@
 fs.img
 *.img
 .gdbinit
+/.claude/worktrees
