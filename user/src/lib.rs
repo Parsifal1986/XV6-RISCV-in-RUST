@@ -17,6 +17,8 @@
 
 #![no_std]
 #![allow(clippy::missing_safety_doc)]
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+#![allow(clippy::redundant_closure)]
 
 extern crate alloc;
 
